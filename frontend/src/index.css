@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+/* Forest and chartreuse: dark green shell, lime accents, white content sheets. */
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Unbounded", "Outfit", sans-serif;
+  --font-mono: "Outfit", ui-sans-serif, sans-serif;
+
+  --color-forest: #354139;
+  --color-forest-deep: #2e3a36;
+  --color-forest-night: #252f2b;
+  --color-ink: #29332e;
+  --color-ink-soft: #3b4842;
+  --color-lime: #bfd63f;
+  --color-lime-deep: #a9bf2c;
+  --color-olive: #5f7410; /* lime that stays readable on white */
+  --color-paper: #f1f3f2;
+  --color-paper-deep: #e3e8e2;
+  --color-card: #ffffff;
+  --color-line: #d6ddd5;
+  --color-sage: #7c9c70;
+  --color-slate: #56707a;
+  /* Brackets E-H, for tournaments with more than four courts. */
+  --color-clay: #b06f3c;
+  --color-harbor: #3f6f8f;
+  --color-plum: #7a5884;
+  --color-sand: #d9c58e;
+  --color-signal: #c9503a; /* errors and negative numbers only */
+  --color-grass: #4f8a3a;
+}
+
+body {
+  @apply bg-forest font-sans text-paper antialiased;
+}
+
+.font-mono { font-variant-numeric: tabular-nums; }
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Faint court-line grid used on dark panels. */
+.court-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Ticket perforation: dashed rule with notches matching the sheet colour. */
+.perforation {
+  position: relative;
+  border-top: 2px dashed var(--color-line);
+}
+.perforation::before,
+.perforation::after {
+  content: "";
+  position: absolute;
+  top: -9px;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: var(--color-paper);
+}
+.perforation::before { left: -9px; }
+.perforation::after { right: -9px; }
