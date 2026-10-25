@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import { useApi } from '../hooks'
-import { ArrowRight, Court, Pin } from '../components/Icons'
-import { Card, Loading, SectionTitle } from '../components/Ui'
+import { ArrowRight, Bolt, Court, Pin, Trophy } from '../components/Icons'
+import { Card, CourtDiagram, Loading, SectionTitle } from '../components/Ui'
 import { formatTime } from '../utils'
 
 const MY_STATUS = { confirmed: 'You’re in', waitlist: 'Waitlisted', forming: 'Team forming' }
@@ -65,6 +65,39 @@ function TournamentCard({ t }) {
   )
 }
 
+const FEATURES = [
+  { icon: Trophy, title: 'Round robin to finals', text: 'Pools feed straight into quarterfinals, semis and a final.' },
+  { icon: Court, title: 'Every court, one schedule', text: 'Spread games across courts and venues without clashes.' },
+  { icon: Bolt, title: 'Scores as they happen', text: 'Players follow results and standings from their phones.' },
+]
+
+const SAMPLE_MATCH = { bracket: 'C', status: 'live', team1: { name: 'Dink Dynasty' }, score1: 9, team2: { name: 'Net Gains' }, score2: 7 }
+const SAMPLE_STANDINGS = [['Dink Dynasty', 3, 0], ['Net Gains', 2, 1], ['Third Shot Drop', 1, 2], ['Kitchen Crew', 0, 3]]
+
+/** Illustration of a live court and its pool table, built from the real components. */
+function HeroPreview() {
+  return (
+    <div className="court-grid rounded-3xl bg-forest-night p-4 shadow-xl sm:p-6">
+      <CourtDiagram match={SAMPLE_MATCH} court={2} className="aspect-[5/3] w-full" />
+      <div className="mt-4 rounded-2xl bg-card p-4 text-ink">
+        <div className="flex items-center justify-between">
+          <p className="label text-ink/55">Bracket C</p>
+          <p className="label text-ink/40">W – L</p>
+        </div>
+        <ol className="mt-2 divide-y divide-line text-sm">
+          {SAMPLE_STANDINGS.map(([name, w, l], i) => (
+            <li key={name} className="flex items-center gap-3 py-2">
+              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${i < 2 ? 'bg-lime' : 'bg-paper-deep text-ink/60'}`}>{i + 1}</span>
+              <span className="flex-1 font-medium">{name}</span>
+              <span className="font-mono text-ink/60">{w} – {l}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
   const { user } = useAuth()
   const { data, error } = useApi(api.tournaments)
@@ -74,43 +107,57 @@ export default function Home() {
 
   return (
     <>
-      <section className="mx-auto max-w-5xl px-4 pb-10 pt-10 text-center sm:px-6 sm:pt-14">
-        <p className="label text-lime">Pickleball tournaments</p>
-        <h1 className="display mx-auto mt-3 max-w-3xl text-4xl text-white sm:text-6xl">Find your next game. <span className="text-lime">Or host it.</span></h1>
-        <p className="mx-auto mt-5 max-w-xl text-white/65">
-          Join a tournament near you, or set one up in minutes: pick your courts and venues, add teams, and PickleXP builds the brackets and schedule.
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link to="/host" className="inline-flex items-center gap-2 rounded-full bg-lime px-6 py-3 text-sm font-semibold text-ink hover:bg-lime-deep">
-            Host a tournament <ArrowRight className="h-4 w-4" />
-          </Link>
-          {!user && (
-            <Link to="/register" className="rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:border-lime hover:text-lime">
-              Create a free account
+      <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-12 pt-10 sm:px-6 sm:pt-16 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
+        <div>
+          <h1 className="display text-4xl text-white sm:text-6xl">Find a game or <span className="text-lime">host your own.</span></h1>
+          <p className="mt-5 max-w-lg text-white/65">
+            Sign up for a tournament near you, or set one up and let PickleXP handle the brackets, schedule and scores.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link to="/host" className="inline-flex items-center gap-2 rounded-full bg-lime px-6 py-3 text-sm font-semibold text-ink hover:bg-lime-deep">
+              Host a tournament <ArrowRight className="h-4 w-4" />
             </Link>
-          )}
+            {!user && (
+              <Link to="/register" className="rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white hover:border-lime hover:text-lime">
+                Sign up
+              </Link>
+            )}
+          </div>
         </div>
+        <HeroPreview />
+      </section>
+
+      <section className="mx-auto mb-14 grid max-w-6xl gap-3 px-4 sm:grid-cols-3 sm:px-6">
+        {FEATURES.map(({ icon: Icon, title, text }) => (
+          <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-lime text-ink"><Icon className="h-4 w-4" /></span>
+            <p className="mt-4 font-semibold text-white">{title}</p>
+            <p className="mt-1 text-sm text-white/55">{text}</p>
+          </div>
+        ))}
       </section>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         {hosting.length > 0 && (
           <section className="mb-12">
-            <SectionTitle index="★" kicker={`${hosting.length} event${hosting.length === 1 ? '' : 's'}`} title="You’re hosting" dark />
+            <SectionTitle kicker={`${hosting.length} event${hosting.length === 1 ? '' : 's'}`} title="You’re hosting" dark />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {hosting.map((t) => <TournamentCard key={t.slug} t={t} />)}
             </div>
           </section>
         )}
         <section>
-          <SectionTitle index="01" kicker={`${others.length} event${others.length === 1 ? '' : 's'}`} title="Tournaments" dark />
+          <SectionTitle kicker={others.length ? `${others.length} event${others.length === 1 ? '' : 's'}` : null} title="Tournaments" dark />
           {others.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {others.map((t) => <TournamentCard key={t.slug} t={t} />)}
             </div>
           ) : (
             <Card className="border-dashed p-10 text-center">
-              <p className="display text-2xl">Nothing on yet</p>
-              <p className="mx-auto mt-2 max-w-sm text-sm text-ink/60">Be the first: host a tournament and share the link with your players.</p>
+              <p className="display text-2xl">No tournaments yet</p>
+              <p className="mt-2 text-sm text-ink/60">
+                <Link to="/host" className="font-semibold text-olive underline underline-offset-2">Host one</Link> and share the link with your players.
+              </p>
             </Card>
           )}
         </section>

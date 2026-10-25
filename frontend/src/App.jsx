@@ -88,39 +88,21 @@ function Header() {
 }
 
 function Footer() {
-  const { user } = useAuth()
-  const groups = [
-    { title: 'Explore', links: [{ to: '/', label: 'Tournaments' }, { to: '/host', label: 'Host a tournament' }] },
-    {
-      title: 'Account',
-      links: user
-        ? [{ to: '/account', label: 'My account' }]
-        : [{ to: '/login', label: 'Log in' }, { to: '/register', label: 'Sign up' }],
-    },
-  ]
   return (
-    <footer className="mt-12 bg-lime text-ink">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 md:grid-cols-[1fr_auto] md:items-end">
+    <footer className="mt-16 border-t border-white/10">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-4 py-8 sm:px-6">
         <div>
-          <p className="display text-3xl sm:text-4xl">Every rally<br /><span className="text-ink/55">earns XP.</span></p>
-          <p className="mt-3 max-w-md text-sm text-ink/70">Round robins and playoffs on as many courts as you have, at one venue or several.</p>
+          <Logo />
+        
         </div>
-        <div className="grid grid-cols-2 gap-x-14 gap-y-8">
-          {groups.map((group) => (
-            <div key={group.title}>
-              <p className="label text-ink/55">{group.title}</p>
-              <ul className="mt-2 flex flex-col gap-1.5 text-sm font-semibold">
-                {group.links.map((item) => <li key={item.to}><Link to={item.to} className="hover:underline">{item.label}</Link></li>)}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-white/70">
+          <Link to="/" className="hover:text-lime">Tournaments</Link>
+          <Link to="/host" className="hover:text-lime">Host a tournament</Link>
+        </nav>
       </div>
-      <div className="bg-ink">
-        <div className="label mx-auto flex max-w-6xl flex-wrap justify-between gap-2 px-4 py-3 text-white/45 sm:px-6">
-          <p>© {new Date().getFullYear()} PickleXP</p>
-          <p>Developed by Justine Cua</p>
-        </div>
+      <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-2 border-t border-white/10 px-4 py-4 text-xs text-white/40 sm:px-6">
+        <p>© {new Date().getFullYear()} PickleXP</p>
+        <p>Developed by Justine Cua</p>
       </div>
     </footer>
   )
