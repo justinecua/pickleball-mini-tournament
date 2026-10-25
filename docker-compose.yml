@@ -1,0 +1,29 @@
+name: picklexp
+
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: ./backend/.env
+    extra_hosts:
+      # Lets the container reach Postgres running on the server (DB_HOST=host.docker.internal).
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - static_files:/app/staticfiles
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_PUBLIC_URL: ${PUBLIC_URL}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Only reachable from the server itself; the host's nginx proxies picklexp.site here.
+      - "127.0.0.1:${HOST_PORT:-8095}:80"
+    volumes:
+      - static_files:/staticfiles:ro
+
+volumes:
+  static_files:

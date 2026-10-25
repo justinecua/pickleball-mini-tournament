@@ -56,4 +56,5 @@ pnpm-debug.log*
 *.swo
 *~
 .DS_Store
+._*
 Thumbs.db
