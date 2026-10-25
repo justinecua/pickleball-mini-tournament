@@ -49,7 +49,7 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
                                     related_name='hosted_tournaments', to=settings.AUTH_USER_MODEL),
         ),
-        migrations.AddField(model_name='tournament', name='slug', field=models.SlugField(max_length=80, null=True)),
+        migrations.AddField(model_name='tournament', name='slug', field=models.SlugField(max_length=80, null=True, db_index=False)),
         migrations.AddField(model_name='tournament', name='teams_per_bracket', field=models.PositiveSmallIntegerField(default=4)),
         migrations.AddField(model_name='tournament', name='created_at', field=models.DateTimeField(default=django.utils.timezone.now)),
         migrations.CreateModel(
