@@ -87,7 +87,7 @@ Promote another user to admin from **Admin → Users**, or with Django admin at 
 | Page | What it does |
 |------|--------------|
 | Overview | Tournament info, progress, live / up-next matches, timeline, winners podium |
-| Schedule | Round-robin grid (Court 1 = Bracket A … Court 4 = Bracket D), then QF, SF and finals. Click a match to enter scores |
+| Schedule | Round-robin grid (Brackets A & B take turns on Courts 1–2, C & D on Courts 3–4, so nobody plays twice in a row), then QF, SF and finals. Click a match to enter scores |
 | Standings | Per-bracket table: W/L, points for/against, +/−. Top 2 advance |
 | Playoffs | Elimination bracket that fills itself in as results arrive |
 | Teams | Registered teams before the draw; bracket slots after it |

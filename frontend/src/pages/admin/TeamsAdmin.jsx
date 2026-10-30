@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApi, useRefresh } from '../../hooks'
 import { useTournament } from '../../tournament'
 import { Alert, Button, Card, inputClass, Loading, SectionTitle } from '../../components/Ui'
-import { BRACKETS, courtLabel } from '../../utils'
+import { BRACKETS, bracketCourtLabel } from '../../utils'
 
 function TeamForm({ team }) {
   const { tapi } = useTournament()
@@ -160,11 +160,11 @@ export default function TeamsAdmin() {
     <>
       <p className="mb-4 text-sm text-ink/60">The draw is made. Rename teams or fix player names in their bracket slots.</p>
       <div className="grid gap-4 md:grid-cols-2">
-        {tournament.brackets.map((bracket, i) => (
+        {tournament.brackets.map((bracket) => (
           <div key={bracket} className="overflow-hidden rounded-xl border border-line bg-card shadow-sm">
             <div className="flex items-center gap-2 border-b border-line px-5 py-3">
               <span className={`h-3 w-3 rounded-full ${BRACKETS[bracket].bg}`} />
-              <p className="display text-lg">Bracket {bracket} <span className="label text-ink/45">{courtLabel(tournament.courts, i + 1)}</span></p>
+              <p className="display text-lg">Bracket {bracket} <span className="label text-ink/45">{bracketCourtLabel(tournament, bracket)}</span></p>
             </div>
             {teams.data.filter((t) => t.bracket === bracket).map((team) => <TeamForm key={team.id} team={team} />)}
           </div>

@@ -22,7 +22,7 @@ function sections(matches, tournament) {
     : n === 1 ? 'The top two from the round robin.' : 'Top two from each bracket.'
   const list = [{
     stages: ['RR'], title: 'Round robin',
-    subtitle: `${n === 1 ? 'One bracket on one court.' : 'Each court hosts one bracket.'} Every team plays the other ${perBracket - 1} in its bracket.`,
+    subtitle: `${n === 1 ? 'One bracket on one court.' : 'Brackets share a pair of courts and take turns, so no team plays two games in a row.'} Every team plays the other ${perBracket - 1} in its bracket.`,
   }]
   let first = true
   for (const round of ROUNDS) {
@@ -51,16 +51,19 @@ function Timetable({ matches, select, myTeamId, tournament, showCourtHeader }) {
           {showCourtHeader && (
             <div className="hidden border-b border-ink bg-ink text-paper lg:grid lg:[grid-template-columns:var(--cols)]" style={cols}>
               <span className="label px-3 py-3 text-white/40">Time</span>
-              {tournament.brackets.map((b, i) => (
-                <span key={b} className="flex min-w-0 flex-col justify-center border-l border-white/10 px-3 py-3">
-                  <span className="flex items-center gap-2">
-                    <span className={`h-3 w-3 shrink-0 rounded-full ring-1 ring-white/50 ${BRACKETS[b].bg}`} />
-                    <span className="font-display text-xl font-black uppercase">Court {i + 1}</span>
-                    <span className="label text-white/50">Bracket {b}</span>
+              {courts.map((court, i) => {
+                const brackets = tournament.brackets.filter((b) => tournament.bracket_courts?.[b]?.includes(court) ?? b === tournament.brackets[i])
+                return (
+                  <span key={court} className="flex min-w-0 flex-col justify-center border-l border-white/10 px-3 py-3">
+                    <span className="flex items-center gap-2">
+                      {brackets.map((b) => <span key={b} className={`h-3 w-3 shrink-0 rounded-full ring-1 ring-white/50 ${BRACKETS[b].bg}`} />)}
+                      <span className="font-display text-xl font-black uppercase">Court {court}</span>
+                      <span className="label text-white/50">{brackets.length > 1 ? `Brackets ${brackets.join(' & ')}` : `Bracket ${brackets[0]}`}</span>
+                    </span>
+                    {tournament.courts[i]?.venue_name && <span className="mt-0.5 truncate pl-5 text-xs text-white/50">{tournament.courts[i].venue_name}</span>}
                   </span>
-                  {tournament.courts[i]?.venue_name && <span className="mt-0.5 truncate pl-5 text-xs text-white/50">{tournament.courts[i].venue_name}</span>}
-                </span>
-              ))}
+                )
+              })}
             </div>
           )}
           {slots.map((slot, row) => {
