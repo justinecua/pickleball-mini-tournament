@@ -100,7 +100,7 @@ Promote another user to admin from **Admin → Users**, or with Django admin at 
 
 - Standings are ranked by wins, then point difference, then points scored, then seed.
 - When all 6 games in a bracket are final, its top 2 are placed into the quarterfinals:
-  QF1 A1 vs B2, QF2 B1 vs A2, QF3 C1 vs D2, QF4 D1 vs C2.
+  QF1 A1 vs B2, QF2 C1 vs D2, QF3 B1 vs A2, QF4 D1 vs C2.
 - SF1 = winners of QF1 and QF2, SF2 = winners of QF3 and QF4. Final = SF winners, third place = SF losers.
 - Editing an earlier result re-seeds later rounds, and clears any playoff results that no longer apply.
 - Ties are rejected.
