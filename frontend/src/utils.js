@@ -52,6 +52,14 @@ export function courtLabel(courts, number) {
   return venue ? `Court ${number} · ${venue}` : `Court ${number}`
 }
 
+/** Where a bracket plays: "Courts 1 & 2 · North Park" (paired brackets share two courts) or "Court 5". */
+export function bracketCourtLabel(tournament, bracket) {
+  const numbers = tournament.bracket_courts?.[bracket] ?? [tournament.brackets.indexOf(bracket) + 1]
+  if (numbers.length === 1) return courtLabel(tournament.courts, numbers[0])
+  const venue = tournament.courts?.[numbers[0] - 1]?.venue_name
+  return venue ? `Courts ${numbers.join(' & ')} · ${venue}` : `Courts ${numbers.join(' & ')}`
+}
+
 export function mapsUrl(court) {
   const query = [court.venue_name, court.address].filter(Boolean).join(', ')
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`

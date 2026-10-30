@@ -76,6 +76,7 @@ def tournament_dict(cursor, t):
         'host': _host(cursor, t['host_id']),
         'courts': courts,
         'brackets': list(schedule.bracket_letters(len(courts))),
+        'bracket_courts': schedule.bracket_courts(len(courts)),
         'advancement': dict(zip(('per_bracket', 'wildcards'), schedule.advancement(len(courts)))),
     }
 

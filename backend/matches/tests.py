@@ -28,7 +28,21 @@ class TournamentFlowTests(APITestCase):
         self.assertEqual(Match.objects.count(), 32)
         self.assertEqual(Match.objects.filter(stage=Match.ROUND_ROBIN).count(), 24)
         m = Match.objects.get(code='RR-C-6')
-        self.assertEqual((m.team1.code, m.team2.code, m.court, m.start_time.strftime('%H:%M')), ('C2', 'C3', 3, '19:40'))
+        self.assertEqual((m.team1.code, m.team2.code, m.court, m.start_time.strftime('%H:%M')), ('C2', 'C3', 4, '19:20'))
+
+    def test_round_robin_alternates_brackets(self):
+        # Brackets sharing courts take turns a round at a time, so nobody plays two slots in a row.
+        rows = {}
+        for m in Match.objects.filter(stage=Match.ROUND_ROBIN).order_by('start_time', 'court'):
+            rows.setdefault(m.start_time, []).append(f'{m.team1.code} v {m.team2.code}')
+        self.assertEqual(list(rows.values()), [
+            ['A1 v A2', 'A3 v A4', 'C1 v C2', 'C3 v C4'],
+            ['B1 v B2', 'B3 v B4', 'D1 v D2', 'D3 v D4'],
+            ['A1 v A3', 'A2 v A4', 'C1 v C3', 'C2 v C4'],
+            ['B1 v B3', 'B2 v B4', 'D1 v D3', 'D2 v D4'],
+            ['A1 v A4', 'A2 v A3', 'C1 v C4', 'C2 v C3'],
+            ['B1 v B4', 'B2 v B3', 'D1 v D4', 'D2 v D3'],
+        ])
 
     def test_ties_rejected(self):
         m = Match.objects.get(code='RR-A-1')

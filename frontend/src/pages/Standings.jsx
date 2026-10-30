@@ -2,7 +2,7 @@ import { Fragment } from 'react'
 import { useApi } from '../hooks'
 import { useTournament } from '../tournament'
 import { Loading, Page } from '../components/Ui'
-import { BRACKETS, courtLabel } from '../utils'
+import { BRACKETS, bracketCourtLabel } from '../utils'
 
 const COLUMNS = [['P', 'Played'], ['W', 'Wins'], ['L', 'Losses'], ['PF', 'Points for'], ['PA', 'Points against']]
 
@@ -18,14 +18,14 @@ export default function Standings() {
   return (
     <Page kicker="Group stage" title="Standings" intro={intro}>
       <div className="grid gap-6 md:grid-cols-2">
-        {Object.entries(data.brackets).map(([bracket, { court, complete, rows }]) => (
+        {Object.entries(data.brackets).map(([bracket, { complete, rows }]) => (
           <div key={bracket} className="overflow-hidden rounded-2xl border border-line bg-card">
             <div className="flex items-center justify-between border-b border-line px-4 py-3">
               <div className="flex items-center gap-3">
                 <span className={`flex h-10 w-10 items-center justify-center rounded-md font-display text-xl font-extrabold ${BRACKETS[bracket].bg} ${BRACKETS[bracket].fg}`}>{bracket}</span>
                 <div>
                   <p className="display text-base">Bracket {bracket}</p>
-                  <p className="label text-ink/50">{courtLabel(tournament.courts, court)}</p>
+                  <p className="label text-ink/50">{bracketCourtLabel(tournament, bracket)}</p>
                 </div>
               </div>
               <span className={`label ${complete ? 'text-grass' : 'text-ink/45'}`}>{complete ? 'Final' : 'In progress'}</span>
