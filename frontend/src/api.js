@@ -101,11 +101,11 @@ export function tournamentApi(slug) {
     updateAnnouncement: (id, body) => t(`/announcements/${id}/`, { method: 'PATCH', body }),
     deleteAnnouncement: (id) => t(`/announcements/${id}/`, { method: 'DELETE' }),
     addEntry: (body) => t('/entries/add/', { method: 'POST', body }),
-    removeEntry: (id) => t(`/entries/${id}/remove/`, { method: 'POST' }),
+    removeEntry: (id, force = false) => t(`/entries/${id}/remove/`, { method: 'POST', body: { force } }),
     soloPlayers: () => t('/host/solo/'),
     pairPlayers: (body) => t('/host/pair/', { method: 'POST', body }),
-    runDraw: () => t('/host/draw/', { method: 'POST' }),
-    swapSlots: (teamA, teamB) => t('/host/swap/', { method: 'POST', body: { team_a: teamA, team_b: teamB } }),
+    runDraw: (force = false) => t('/host/draw/', { method: 'POST', body: { force } }),
+    swapSlots: (teamA, teamB, force = false) => t('/host/swap/', { method: 'POST', body: { team_a: teamA, team_b: teamB, force } }),
 
     // registration
     entries: () => t('/entries/'),

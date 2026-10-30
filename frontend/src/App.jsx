@@ -19,6 +19,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Account from './pages/Account'
 import Manage from './pages/Manage'
+import TournamentsAdmin from './pages/admin/TournamentsAdmin'
 import UsersAdmin from './pages/admin/UsersAdmin'
 import Join from './pages/Join'
 import MyTeam from './pages/MyTeam'
@@ -58,6 +59,7 @@ function UserMenu() {
     <div className="flex items-center gap-2 lg:order-2">
       {t && <NavLink to={t.link('/my-team')} className={navClass}>My team</NavLink>}
       {t?.isHost && <Link to={t.link('/manage')} className="rounded-full border border-lime/60 px-4 py-2 text-sm font-semibold text-lime hover:bg-lime hover:text-ink">Manage</Link>}
+      {!t && isAdmin && <NavLink to="/admin/tournaments" className={navClass}>Tournaments</NavLink>}
       {!t && isAdmin && <NavLink to="/admin/users" className={navClass}>Users</NavLink>}
       <NavLink to="/account" className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm font-medium text-white hover:bg-white/10">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-lime font-display text-sm font-extrabold uppercase text-ink">
@@ -174,6 +176,7 @@ function Shell() {
           <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
           <Route path="/register" element={<GuestOnly><Register /></GuestOnly>} />
           <Route path="/account" element={<RequireAuth><Account /></RequireAuth>} />
+          <Route path="/admin/tournaments" element={<RequireAuth admin><TournamentsAdmin /></RequireAuth>} />
           <Route path="/admin/users" element={<RequireAuth admin><UsersAdmin /></RequireAuth>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

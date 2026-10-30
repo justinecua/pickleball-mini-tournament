@@ -60,6 +60,19 @@ export function bracketCourtLabel(tournament, bracket) {
   return venue ? `Courts ${numbers.join(' & ')} · ${venue}` : `Courts ${numbers.join(' & ')}`
 }
 
+/**
+ * Runs a host action; when a lock refuses it (after the draw, after scores) a site admin
+ * may confirm and run it again with force. call(force) must return the request's promise.
+ */
+export async function withAdminOverride(isAdmin, call) {
+  try {
+    return await call(false)
+  } catch (err) {
+    if (!isAdmin || err.status !== 400 || !window.confirm(`${err.message}\n\nYou're a site admin. Override and do it anyway?`)) throw err
+    return call(true)
+  }
+}
+
 export function mapsUrl(court) {
   const query = [court.venue_name, court.address].filter(Boolean).join(', ')
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`

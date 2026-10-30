@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
+from core.permissions import overrides
 from core.responses import respond
 from core.views import TournamentView
 
@@ -20,7 +21,7 @@ class Tournaments(APIView):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
 
     def get(self, request):
-        return respond(listTournaments(request.user.id))
+        return respond(listTournaments(request.user.id, request.user.is_staff))
 
     def post(self, request):
         return respond(createTournament(request.user.id, request.data), status.HTTP_201_CREATED)
@@ -31,7 +32,7 @@ class TournamentDetail(TournamentView):
         return respond(getTournament(self.tid, request.user.id, self.is_host))
 
     def patch(self, request):
-        return respond(updateTournament(self.tid, request.data, request.user.id))
+        return respond(updateTournament(self.tid, request.data, request.user.id, overrides(request)))
 
     put = patch
 

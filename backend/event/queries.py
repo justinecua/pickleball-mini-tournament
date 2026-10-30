@@ -3,12 +3,13 @@ Tournaments: creating and listing them, their details and courts, the run of
 show, and the overview summary that pulls the other apps together.
 
   - Any signed-in user can create a tournament and becomes its host.
-  - Courts are numbered 1..N (N = 1..8); court N hosts bracket N and has its
-    own venue name and address.
+  - Courts are numbered 1..N (N = 1..8), each with its own venue name and
+    address. Brackets pair up on courts 1-2, 3-4 ... (event/schedule.py).
   - Changing the number of courts or teams per bracket rebuilds the slots,
     games and run of show (event/schedule.py), so it is refused once scores
-    exist; it also undoes the draw. Changing the start time or game length
-    just moves the games, keeping results.
+    exist unless a site admin forces it; it also undoes the draw. Changing the
+    start time or game length just moves the games, keeping results.
+  - Site admins can manage every tournament (`can_manage` in the directory).
   - `drawn_at` is set by the draw (registration/queries.py) and is read-only here.
 
 Example:
@@ -83,8 +84,9 @@ def tournament_dict(cursor, t):
 
 # --- Directory ----------------------------------------------------------------
 
-def listTournaments(viewer_id=None):
-    """Every tournament, newest first, with what the directory cards need."""
+def listTournaments(viewer_id=None, is_admin=False):
+    """Every tournament, newest first, with what the directory cards need.
+    `can_manage` is true for the host and for site admins; `is_host` only for the host."""
     from registration.queries import registration_status
 
     with connection().cursor() as cursor:
@@ -109,6 +111,7 @@ def listTournaments(viewer_id=None):
                 'slug': t['slug'], 'name': t['name'], 'date': t['date'], 'start_time': t['start_time'],
                 'host': _host(cursor, t['host_id']),
                 'is_host': viewer_id is not None and viewer_id == t['host_id'],
+                'can_manage': is_admin or (viewer_id is not None and viewer_id == t['host_id']),
                 'courts': len(courts),
                 'venues': sorted({c['venue_name'] for c in courts if c['venue_name']}),
                 'registration': registration_status(cursor, t['id']),
@@ -225,7 +228,7 @@ def createTournament(user_id, data):
     return getTournament(tid, user_id, is_host=True)
 
 
-def updateTournament(tid, data, viewer_id=None):
+def updateTournament(tid, data, viewer_id=None, force=False):
     from registration.queries import promote_waitlist
 
     try:
@@ -240,7 +243,7 @@ def updateTournament(tid, data, viewer_id=None):
         resize = (courts is not None and len(courts) != court_count) or (
             'teams_per_bracket' in fields and fields['teams_per_bracket'] != current['teams_per_bracket'])
         retime = any(f in fields and str(fields[f]) != str(current[f]) for f in ('start_time', 'game_minutes'))
-        if resize and results_exist(cursor, tid):
+        if resize and results_exist(cursor, tid) and not force:
             message = 'Scores have been entered. Reset all results before changing courts or teams per bracket.'
             return {'error': message, 'fields': {'courts' if courts is not None else 'teams_per_bracket': [message]}}
 

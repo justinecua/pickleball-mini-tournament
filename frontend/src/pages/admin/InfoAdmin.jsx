@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth'
 import { useRefresh } from '../../hooks'
 import { useTournament } from '../../tournament'
 import { Alert, Button, Card, Field, inputClass, SectionTitle } from '../../components/Ui'
 import { cleanCourts, CourtsEditor, FormatSummary, TEAMS_PER_BRACKET } from '../../components/TournamentForm'
+import { withAdminOverride } from '../../utils'
 
 const FIELDS = ['name', 'date', 'start_time', 'game_minutes', 'teams_per_bracket', 'format', 'notes']
 
@@ -11,6 +13,7 @@ const FIELDS = ['name', 'date', 'start_time', 'game_minutes', 'teams_per_bracket
 export default function InfoAdmin() {
   const { tournament, tapi, slug } = useTournament()
   const { refresh } = useRefresh()
+  const { isAdmin } = useAuth()
   const navigate = useNavigate()
   const [form, setForm] = useState(() => Object.fromEntries(FIELDS.map((k) => [k, tournament[k] ?? ''])))
   const [courts, setCourts] = useState(() => tournament.courts.map(({ venue_name, address }) => ({ venue_name, address })))
@@ -24,10 +27,10 @@ export default function InfoAdmin() {
       && !window.confirm('Changing courts or teams per bracket rebuilds the brackets and undoes the draw. Continue?')) return
     setState({ status: 'saving', errors: {} })
     try {
-      const saved = await tapi.update({
+      const saved = await withAdminOverride(isAdmin, (force) => tapi.update({
         ...form, date: form.date || null, game_minutes: Number(form.game_minutes),
-        teams_per_bracket: Number(form.teams_per_bracket), courts: cleanCourts(courts),
-      })
+        teams_per_bracket: Number(form.teams_per_bracket), courts: cleanCourts(courts), force,
+      }))
       setState({ status: 'saved', errors: {} })
       if (saved.slug !== slug) navigate(`/t/${saved.slug}/manage/settings`, { replace: true })
       else refresh()

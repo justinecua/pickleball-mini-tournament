@@ -14,7 +14,7 @@ export default function Account() {
   const tournaments = useApi(api.tournaments)
   const [form, setForm] = useState({ first_name: user.first_name, last_name: user.last_name, email: user.email })
   const [state, setState] = useState({ status: 'idle', errors: {} })
-  const mine = (tournaments.data ?? []).filter((t) => t.is_host || t.my_status)
+  const mine = (tournaments.data ?? []).filter((t) => t.can_manage || t.my_status)
 
   async function save(e) {
     e.preventDefault()
@@ -54,18 +54,19 @@ export default function Account() {
         </section>
 
         <section className="lg:col-span-7">
-          <SectionTitle index="02" kicker="Hosting & playing" title="My tournaments" />
+          <SectionTitle index="02" kicker={isAdmin ? 'Site admin · every tournament' : 'Hosting & playing'} title={isAdmin ? 'Tournaments' : 'My tournaments'} />
           {mine.length ? (
             <ul className="space-y-3">
               {mine.map((t) => (
                 <li key={t.slug}>
-                  <Link to={t.is_host ? `/t/${t.slug}/manage` : `/t/${t.slug}/my-team`}
+                  <Link to={t.can_manage ? `/t/${t.slug}/manage` : `/t/${t.slug}/my-team`}
                     className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-card p-5 hover:border-ink">
                     <div className="min-w-0">
                       <p className="label text-ink/50">{formatDate(t.date)}</p>
                       <p className="mt-1 truncate text-lg font-bold">{t.name}</p>
                       <p className="mt-1 flex flex-wrap gap-1.5">
                         {t.is_host && <span className="label rounded-full bg-ink px-2 py-0.5 text-lime">Host</span>}
+                        {t.can_manage && !t.is_host && <span className="label rounded-full bg-paper-deep px-2 py-0.5 text-ink/70">Admin</span>}
                         {t.my_status && <span className="label rounded-full bg-lime px-2 py-0.5 text-ink">{MY_STATUS[t.my_status]}</span>}
                       </p>
                     </div>
