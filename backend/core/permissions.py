@@ -1,6 +1,13 @@
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
+def overrides(request):
+    """A site admin who sent "force": true may break the locks that stop hosts (after the draw, after scores)."""
+    from .db import to_bool
+
+    return bool(request.user and request.user.is_staff and to_bool(request.data.get('force', False)))
+
+
 def is_host(user, tournament):
     """The tournament's host, or a site admin (is_staff), may manage it."""
     if not (user and user.is_authenticated) or tournament is None:

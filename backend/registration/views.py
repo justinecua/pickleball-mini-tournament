@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 
-from core.permissions import IsHost, is_host
+from core.permissions import IsHost, is_host, overrides
 from core.responses import respond
 from core.views import TournamentView
 
@@ -72,14 +72,14 @@ class AddEntry(TournamentView):
     permission_classes = [IsHost]
 
     def post(self, request):
-        return respond(addEntry(self.tid, request.data), status.HTTP_201_CREATED)
+        return respond(addEntry(self.tid, request.data, overrides(request)), status.HTTP_201_CREATED)
 
 
 class RemoveEntry(TournamentView):
     permission_classes = [IsHost]
 
     def post(self, request, pk):
-        return respond(removeEntry(self.tid, pk))
+        return respond(removeEntry(self.tid, pk, overrides(request)))
 
 
 class SoloPlayers(TournamentView):
@@ -93,18 +93,18 @@ class PairPlayers(TournamentView):
     permission_classes = [IsHost]
 
     def post(self, request):
-        return respond(pairPlayers(self.tid, request.data), status.HTTP_201_CREATED)
+        return respond(pairPlayers(self.tid, request.data, overrides(request)), status.HTTP_201_CREATED)
 
 
 class Draw(TournamentView):
     permission_classes = [IsHost]
 
     def post(self, request):
-        return respond(runDraw(self.tid))
+        return respond(runDraw(self.tid, force=overrides(request)))
 
 
 class Swap(TournamentView):
     permission_classes = [IsHost]
 
     def post(self, request):
-        return respond(swapSlots(self.tid, request.data))
+        return respond(swapSlots(self.tid, request.data, overrides(request)))
