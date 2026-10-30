@@ -5,7 +5,8 @@ The format is one bracket per court:
   - Court N hosts bracket N (A, B, C ... up to H). Every team plays every other
     team in its bracket, one game per time slot on that court.
   - Playoffs are single elimination. With 1, 2, 4 or 8 brackets the top two of
-    each bracket go through and cross over (A1 v B2, B1 v A2, ...). Otherwise
+    each bracket go through and cross over (QF1 A1 v B2, QF2 C1 v D2, QF3 B1 v A2,
+    QF4 D1 v C2). Otherwise
     every bracket winner goes through, plus the best runners-up needed to fill
     a bracket of 4 or 8, seeded overall ("S1" = best bracket winner).
   - A third-place game is played alongside the final whenever there are semis.
@@ -73,9 +74,10 @@ def knockout_rounds(courts):
     if courts == 1:
         sources = [('A1', 'A2')]
     elif _power_of_two(courts):
-        sources = []
-        for a, b in zip(letters[::2], letters[1::2]):
-            sources += [(f'{a}1', f'{b}2'), (f'{b}1', f'{a}2')]
+        # All the "A1 v B2" games fill the top half, their "B1 v A2" twins the bottom half,
+        # so two winners of paired brackets can only meet in the final.
+        pairs = list(zip(letters[::2], letters[1::2]))
+        sources = [(f'{a}1', f'{b}2') for a, b in pairs] + [(f'{b}1', f'{a}2') for a, b in pairs]
     else:
         order = _seed_order(playoff_size(courts))
         sources = [(f'S{order[i]}', f'S{order[i + 1]}') for i in range(0, len(order), 2)]
