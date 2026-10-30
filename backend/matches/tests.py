@@ -38,19 +38,19 @@ class TournamentFlowTests(APITestCase):
         self.assertIsNone(Match.objects.get(code='QF1').team1)
         self.play_round_robin()
         qf = {m.code: (m.team1.code, m.team2.code) for m in Match.objects.filter(stage=Match.QUARTERFINAL)}
-        self.assertEqual(qf, {'QF1': ('A1', 'B2'), 'QF2': ('B1', 'A2'), 'QF3': ('C1', 'D2'), 'QF4': ('D1', 'C2')})
+        self.assertEqual(qf, {'QF1': ('A1', 'B2'), 'QF2': ('C1', 'D2'), 'QF3': ('B1', 'A2'), 'QF4': ('D1', 'C2')})
 
         for code in ['QF1', 'QF2', 'QF3', 'QF4']:
             self.score(Match.objects.get(code=code), 11, 7)
         for code in ['SF1', 'SF2']:
             self.score(Match.objects.get(code=code), 9, 11)
         final, third = Match.objects.get(code='F'), Match.objects.get(code='3P')
-        self.assertEqual((final.team1.code, final.team2.code), ('B1', 'D1'))
-        self.assertEqual((third.team1.code, third.team2.code), ('A1', 'C1'))
+        self.assertEqual((final.team1.code, final.team2.code), ('C1', 'D1'))
+        self.assertEqual((third.team1.code, third.team2.code), ('A1', 'B1'))
 
         self.score(final, 11, 8)
         summary = self.client.get(f'{T}/summary/').json()
-        self.assertEqual(summary['placements']['champion']['code'], 'B1')
+        self.assertEqual(summary['placements']['champion']['code'], 'C1')
         self.assertEqual(summary['completed_matches'], 31)
 
         # Changing a QF result invalidates the downstream semifinal and final.
