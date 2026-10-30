@@ -25,12 +25,13 @@ function TournamentCard({ t }) {
   const pct = reg.capacity ? Math.min(100, (reg.confirmed / reg.capacity) * 100) : 0
   const left = Math.max(0, reg.capacity - reg.confirmed)
   return (
-    <Link to={`/t/${t.slug}`} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card transition hover:-translate-y-0.5 hover:border-ink hover:shadow-lg">
+    <Link to={t.can_manage ? `/t/${t.slug}/manage` : `/t/${t.slug}`} className="group flex flex-col overflow-hidden rounded-2xl border border-line bg-card transition hover:-translate-y-0.5 hover:border-ink hover:shadow-lg">
       <div className="court-grid relative bg-forest-night p-5 text-white">
         <div className="flex items-start justify-between gap-3">
           <DateStub date={t.date} />
           <div className="flex flex-wrap justify-end gap-1">
             {t.is_host && <span className="label rounded-full bg-white px-2 py-0.5 text-ink">Hosting</span>}
+            {t.can_manage && !t.is_host && <span className="label rounded-full bg-white/15 px-2 py-0.5 text-white">Admin</span>}
             {t.my_status && <span className="label rounded-full bg-lime px-2 py-0.5 text-ink">{MY_STATUS[t.my_status]}</span>}
             <span className={`label rounded-full px-2 py-0.5 ${state[1]}`}>{state[0]}</span>
           </div>

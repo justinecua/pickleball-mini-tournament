@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { useAuth } from '../../auth'
 import { useApi, useRefresh } from '../../hooks'
 import { useTournament } from '../../tournament'
 import { Alert, Button, Card, inputClass, Loading, SectionTitle } from '../../components/Ui'
-import { BRACKETS, bracketCourtLabel } from '../../utils'
+import { BRACKETS, bracketCourtLabel, withAdminOverride } from '../../utils'
 
 function TeamForm({ team }) {
   const { tapi } = useTournament()
@@ -50,9 +51,11 @@ function TeamForm({ team }) {
 
 const EMPTY = { name: '', player1: '', player2: '' }
 
-/** Before the draw: the host adds teams by name. They join the field like registered teams. */
+/** Before the draw: the host adds teams by name. They join the field like registered teams.
+ *  After the draw only a site admin can, and the team takes an open slot. */
 function AddTeam({ registration }) {
   const { tapi } = useTournament()
+  const { isAdmin } = useAuth()
   const { refresh } = useRefresh()
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState(null)
@@ -65,7 +68,7 @@ function AddTeam({ registration }) {
     setBusy(true)
     setError(null)
     try {
-      await tapi.addEntry(form)
+      await withAdminOverride(isAdmin, (force) => tapi.addEntry({ ...form, force }))
       setForm(EMPTY)
       refresh()
     } catch (err) {
@@ -85,7 +88,8 @@ function AddTeam({ registration }) {
       </form>
       <p className="mt-3 text-xs text-ink/50">
         {full ? 'The field is full, so new teams go on the waitlist. Add courts or teams per bracket to make room.'
-          : `${registration.capacity - registration.confirmed} of ${registration.capacity} spots left. Teams are placed into brackets by the draw.`}
+          : `${registration.capacity - registration.confirmed} of ${registration.capacity} spots left. ${registration.drawn
+            ? 'A new team takes a random open slot.' : 'Teams are placed into brackets by the draw.'}`}
       </p>
       {error && <div className="mt-3"><Alert>{error}</Alert></div>}
     </Card>
@@ -94,6 +98,7 @@ function AddTeam({ registration }) {
 
 function FieldList({ entries }) {
   const { tapi } = useTournament()
+  const { isAdmin } = useAuth()
   const { refresh } = useRefresh()
   const [error, setError] = useState(null)
   const active = entries.filter((e) => e.status !== 'withdrawn')
@@ -102,7 +107,7 @@ function FieldList({ entries }) {
     if (!window.confirm(`Remove ${entry.name} from the tournament?`)) return
     setError(null)
     try {
-      await tapi.removeEntry(entry.id)
+      await withAdminOverride(isAdmin, (force) => tapi.removeEntry(entry.id, force))
       refresh()
     } catch (err) {
       setError(err.message)
@@ -135,6 +140,7 @@ function FieldList({ entries }) {
 
 export default function TeamsAdmin() {
   const { tapi, tournament } = useTournament()
+  const { isAdmin } = useAuth()
   const teams = useApi(tapi.teams)
   const entries = useApi(tapi.entries)
   if (!teams.data || !entries.data) return <Loading error={teams.error || entries.error} />
@@ -158,6 +164,20 @@ export default function TeamsAdmin() {
 
   return (
     <>
+      {isAdmin && (
+        <div className="mb-10 space-y-10">
+          <section>
+            <SectionTitle index="01" kicker="Site admin" title="Add a team"
+              subtitle="The draw is made, so only a site admin can add a team. It takes a random open slot." />
+            <AddTeam registration={reg} />
+          </section>
+          <section>
+            <SectionTitle index="02" kicker={`${reg.confirmed} confirmed · ${reg.waitlist} waitlist`} title="The field"
+              subtitle="Removing a team frees its slot for the next team on the waitlist, or leaves it open." />
+            <FieldList entries={entries.data} />
+          </section>
+        </div>
+      )}
       <p className="mb-4 text-sm text-ink/60">The draw is made. Rename teams or fix player names in their bracket slots.</p>
       <div className="grid gap-4 md:grid-cols-2">
         {tournament.brackets.map((bracket) => (

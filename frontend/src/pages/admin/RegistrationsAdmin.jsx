@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../auth'
 import { useApi, useRefresh } from '../../hooks'
 import { useTournament } from '../../tournament'
 import Modal from '../../components/Modal'
 import QrCode from '../../components/QrCode'
 import { Check } from '../../components/Icons'
 import { Alert, BracketTag, Button, Card, inputClass, Loading, SectionTitle } from '../../components/Ui'
-import { publicUrl } from '../../utils'
+import { publicUrl, withAdminOverride } from '../../utils'
 import { RegistrationMeter } from '../Join'
 
 const STATUS_STYLE = {
@@ -30,13 +31,14 @@ function ManualCheckIn() {
 
 function PairForm({ solo, onDone }) {
   const { tapi } = useTournament()
+  const { isAdmin } = useAuth()
   const [form, setForm] = useState({ user_a: '', user_b: '', name: '' })
   const [error, setError] = useState(null)
   async function submit(e) {
     e.preventDefault()
     setError(null)
     try {
-      await tapi.pairPlayers({ ...form, user_a: Number(form.user_a), user_b: Number(form.user_b) })
+      await withAdminOverride(isAdmin, (force) => tapi.pairPlayers({ ...form, user_a: Number(form.user_a), user_b: Number(form.user_b), force }))
       setForm({ user_a: '', user_b: '', name: '' })
       onDone()
     } catch (err) {
@@ -62,6 +64,7 @@ function PairForm({ solo, onDone }) {
 
 function SwapForm({ teams, onDone }) {
   const { tapi } = useTournament()
+  const { isAdmin } = useAuth()
   const [a, setA] = useState('')
   const [b, setB] = useState('')
   const [error, setError] = useState(null)
@@ -69,7 +72,7 @@ function SwapForm({ teams, onDone }) {
     e.preventDefault()
     setError(null)
     try {
-      await tapi.swapSlots(Number(a), Number(b))
+      await withAdminOverride(isAdmin, (force) => tapi.swapSlots(Number(a), Number(b), force))
       setA(''); setB('')
       onDone()
     } catch (err) {
@@ -94,6 +97,7 @@ function SwapForm({ teams, onDone }) {
 export default function RegistrationsAdmin() {
   const { refresh } = useRefresh()
   const { tapi, link, tournament } = useTournament()
+  const { isAdmin } = useAuth()
   const summary = useApi(tapi.summary)
   const entries = useApi(tapi.entries)
   const solo = useApi(tapi.soloPlayers)
@@ -126,7 +130,7 @@ export default function RegistrationsAdmin() {
   async function draw() {
     setError(null)
     try {
-      await tapi.runDraw()
+      await withAdminOverride(isAdmin, (force) => tapi.runDraw(force))
       setMessage(`Draw complete: ${reg.confirmed} teams placed into ${bracketRange}.`)
       refresh()
     } catch (e) {
@@ -169,7 +173,15 @@ export default function RegistrationsAdmin() {
             ? 'Teams are placed. You can still swap two slots until the first score is entered.'
             : `Shuffles all confirmed teams into slots ${slotRange}. Any empty slots show as “Open slot”. This also clears any scores.`} />
         {reg.drawn ? (
-          <Card className="p-5"><SwapForm teams={teams.data} onDone={refresh} /></Card>
+          <Card className="p-5">
+            <SwapForm teams={teams.data} onDone={refresh} />
+            {isAdmin && (
+              <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4">
+                <Button variant="outline" disabled={!reg.confirmed} onClick={() => setConfirmDraw(true)}>Redraw</Button>
+                <span className="text-xs text-ink/50">Site admin: reshuffles every confirmed team, even after scores.</span>
+              </div>
+            )}
+          </Card>
         ) : (
           <Button disabled={!reg.confirmed} onClick={() => setConfirmDraw(true)}>Run draw with {reg.confirmed} team{reg.confirmed === 1 ? '' : 's'}</Button>
         )}
@@ -233,13 +245,13 @@ export default function RegistrationsAdmin() {
       </section>
 
       {confirmDraw && (
-        <Modal title="Run the draw?" eyebrow="Bracket draw" onClose={() => setConfirmDraw(false)}>
+        <Modal title={reg.drawn ? 'Redraw?' : 'Run the draw?'} eyebrow="Bracket draw" onClose={() => setConfirmDraw(false)}>
           <p className="text-sm text-ink/70">
             {reg.confirmed} confirmed team{reg.confirmed === 1 ? '' : 's'} will be shuffled into slots {slotRange}.
             {reg.confirmed < reg.capacity && ` ${reg.capacity - reg.confirmed} slot(s) will stay open.`} Registration closes and players can no longer change teams.
           </p>
           <div className="mt-6 flex gap-2">
-            <Button className="flex-1" onClick={draw}>Run draw</Button>
+            <Button className="flex-1" onClick={draw}>{reg.drawn ? 'Redraw' : 'Run draw'}</Button>
             <Button variant="ghost" onClick={() => setConfirmDraw(false)}>Cancel</Button>
           </div>
         </Modal>

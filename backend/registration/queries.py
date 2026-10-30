@@ -7,6 +7,10 @@ Team registration, the bracket draw, and game-day check-in, per tournament.
     later ones go on a waitlist and move up automatically when a confirmed
     team withdraws. A player can be on one team per tournament.
   - Hosts can also add teams by name (no accounts needed) and remove teams.
+  - Site admins can override the locks (with `force`): add, pair or remove teams
+    after the draw (a new team takes a random open slot, a removed team's slot
+    goes to the next waitlisted team or becomes an open slot), and swap or
+    redraw after scores.
   - Solo players flag "looking for a partner"; a host pairs two of them.
   - The draw shuffles confirmed teams into the bracket slots (teams_team),
     clears results and closes registration. Slots can be swapped until the
@@ -392,7 +396,7 @@ def checkIn(token, is_host):
 
 # --- Host ---------------------------------------------------------------------
 
-def addEntry(tid, data):
+def addEntry(tid, data, force=False):
     """The host adds a team by name. It takes a spot (or the waitlist) like a registered team."""
     try:
         name = to_text(data.get('name'), 'name', 80, required=True)
@@ -401,23 +405,27 @@ def addEntry(tid, data):
     except Invalid as exc:
         return field_error(exc)
     with transaction.atomic(), connection().cursor() as cursor:
-        if load_tournament_by_id(cursor, tid)['drawn_at']:
+        if load_tournament_by_id(cursor, tid)['drawn_at'] and not force:
             return {'error': 'The draw has been made. Rename an open slot on the Teams tab instead.'}
         entry_id = _insert_entry(cursor, tid, name, player1=player1, player2=player2)
         _confirm(cursor, tid, entry_id)
+        place_unplaced(cursor, tid)
         return entry_private(fetch_entry(cursor, entry_id), positions(cursor, tid))
 
 
-def removeEntry(tid, entry_id):
+def removeEntry(tid, entry_id, force=False):
     with transaction.atomic(), connection().cursor() as cursor:
         entry = fetch_entry(cursor, entry_id)
         if entry is None or entry['tournament_id'] != tid:
             return {'error': 'Not found.', 'status': 404}
-        if load_tournament_by_id(cursor, tid)['drawn_at']:
+        if load_tournament_by_id(cursor, tid)['drawn_at'] and not force:
             return {'error': 'The draw has been made, so teams can no longer be removed.'}
-        cursor.execute('UPDATE registration_entry SET status = %s WHERE id = %s;', [WITHDRAWN, entry_id])
+        cursor.execute('UPDATE registration_entry SET status = %s, slot_id = NULL WHERE id = %s;', [WITHDRAWN, entry_id])
+        if entry['slot_id']:
+            _fill_slot(cursor, entry['slot_id'], None)
         if entry['status'] == CONFIRMED:
             promote_waitlist(cursor, tid)
+        place_unplaced(cursor, tid)
     return {'ok': True}
 
 
@@ -444,7 +452,7 @@ def getSoloPlayers(tid):
         ]
 
 
-def pairPlayers(tid, data):
+def pairPlayers(tid, data, force=False):
     try:
         ids = [int(data.get('user_a')), int(data.get('user_b'))]
     except (TypeError, ValueError):
@@ -457,12 +465,13 @@ def pairPlayers(tid, data):
         if any(active_entry_id(cursor, tid, user_id) for user_id in ids):
             return {'error': 'One of those players is already on a team.'}
         closed = _closed_reason(cursor, tid)
-        if closed:
+        if closed and not force:
             return {'error': closed}
         a, b = users[ids[0]], users[ids[1]]
         name = str(data.get('name') or '').strip() or f'{a["first_name"] or a["username"]} & {b["first_name"] or b["username"]}'
         entry_id = _insert_entry(cursor, tid, name, captain_id=ids[0], partner_id=ids[1])
         _confirm(cursor, tid, entry_id)
+        place_unplaced(cursor, tid)
         for user_id in ids:
             set_profile(cursor, user_id, looking_for_partner=False)
         return entry_private(fetch_entry(cursor, entry_id), positions(cursor, tid))
@@ -481,10 +490,32 @@ def _fill_slot(cursor, slot_id, entry, fallback=None):
         cursor.execute('UPDATE registration_entry SET slot_id = %s WHERE id = %s;', [slot_id, entry['id']])
 
 
-def runDraw(tid, rng=random):
+def place_unplaced(cursor, tid, rng=random):
+    """After the draw, put confirmed teams that have no slot yet into random open slots."""
+    if not load_tournament_by_id(cursor, tid)['drawn_at']:
+        return
+    waiting = fetch_entries(cursor, ' WHERE e.tournament_id = %s AND e.status = %s AND e.slot_id IS NULL', [tid, CONFIRMED])
+    if not waiting:
+        return
+    cursor.execute(
+        """
+        SELECT t.id FROM teams_team t
+        WHERE t.tournament_id = %s AND t.name = %s
+          AND NOT EXISTS (SELECT 1 FROM registration_entry e WHERE e.slot_id = t.id)
+        ORDER BY t.bracket, t.seed;
+        """,
+        [tid, 'Open slot'],
+    )
+    open_slots = [r[0] for r in cursor.fetchall()]
+    rng.shuffle(open_slots)
+    for entry, slot_id in zip(waiting, open_slots):
+        _fill_slot(cursor, slot_id, entry)
+
+
+def runDraw(tid, rng=random, force=False):
     """Shuffle confirmed teams into the bracket slots. Empty slots become "Open slot"."""
     with transaction.atomic(), connection().cursor() as cursor:
-        if results_exist(cursor, tid):
+        if results_exist(cursor, tid) and not force:
             return {'error': 'Scores have already been entered. Reset all results before redrawing.'}
         entries = fetch_entries(cursor, ' WHERE e.tournament_id = %s AND e.status = %s', [tid, CONFIRMED])
         if not entries:
@@ -504,7 +535,7 @@ def runDraw(tid, rng=random):
         return all_teams(cursor, tid)
 
 
-def swapSlots(tid, data):
+def swapSlots(tid, data, force=False):
     try:
         ids = [int(data.get('team_a')), int(data.get('team_b'))]
     except (TypeError, ValueError):
@@ -516,7 +547,7 @@ def swapSlots(tid, data):
         slots = {t['id']: t for t in rows(cursor)}
         if len(slots) != 2:
             return {'error': 'Choose two different slots.'}
-        if results_exist(cursor, tid):
+        if results_exist(cursor, tid) and not force:
             return {'error': 'Scores have already been entered, so slots can no longer be swapped.'}
         placed = {e['slot_id']: e for e in fetch_entries(cursor, ' WHERE e.slot_id IN (%s, %s)', ids)}
         cursor.execute('UPDATE registration_entry SET slot_id = NULL WHERE slot_id IN (%s, %s);', ids)
