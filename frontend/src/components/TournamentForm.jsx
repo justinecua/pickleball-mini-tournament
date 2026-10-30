@@ -37,7 +37,7 @@ export function FormatSummary({ courts, teamsPerBracket }) {
         ))}
       </dl>
       <p className="mt-4 text-sm text-white/65">
-        Each court hosts one bracket and every team plays the others in it.{' '}
+        {courts === 1 ? 'One bracket on one court' : 'Brackets share a pair of courts and take turns'}, and every team plays the others in its bracket.{' '}
         {wildcards
           ? `Bracket winners go through, plus the ${wildcards} best runner${wildcards > 1 ? 's' : ''}-up.`
           : courts === 1 ? 'The top two meet in the final.' : 'The top two of each bracket go through.'}
@@ -46,7 +46,7 @@ export function FormatSummary({ courts, teamsPerBracket }) {
   )
 }
 
-/** Number of courts, and where each one is. Court N hosts bracket N. */
+/** Number of courts, and where each one is. Brackets pair up on courts 1-2, 3-4 ... */
 export function CourtsEditor({ courts, onChange, error }) {
   const [shared, setShared] = useState(() => sameVenue(courts))
   const resize = (n) => {
@@ -63,7 +63,7 @@ export function CourtsEditor({ courts, onChange, error }) {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <span className="label block text-ink/55">Courts</span>
-          <span className="text-xs text-ink/45">Up to {MAX_COURTS}. Each court hosts one bracket.</span>
+          <span className="text-xs text-ink/45">Up to {MAX_COURTS}. One bracket per court; pairs of brackets share two courts.</span>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" className={stepper} onClick={() => resize(courts.length - 1)} disabled={courts.length <= 1} aria-label="One court fewer">−</button>

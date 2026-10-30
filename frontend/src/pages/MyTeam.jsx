@@ -6,7 +6,7 @@ import MatchCard from '../components/MatchCard'
 import QrCode from '../components/QrCode'
 import { ArrowRight, Check } from '../components/Icons'
 import { Alert, BracketTag, Button, Card, Loading, Page, SectionTitle } from '../components/Ui'
-import { courtLabel, publicUrl } from '../utils'
+import { bracketCourtLabel, publicUrl } from '../utils'
 
 const BANNER = {
   forming: ['bg-white text-ink ring-1 ring-line', 'Waiting for your partner', 'Send them the invite below. Your team is confirmed the moment they accept.'],
@@ -99,7 +99,7 @@ export default function MyTeam() {
         {slot && (
           <div className="rounded-xl bg-white/90 px-4 py-3 text-ink">
             <p className="label text-ink/55">Your slot</p>
-            <p className="mt-1 flex items-center gap-2 font-semibold"><BracketTag bracket={slot.bracket}>{slot.code}</BracketTag> Bracket {slot.bracket} · {courtLabel(tournament.courts, tournament.brackets.indexOf(slot.bracket) + 1)}</p>
+            <p className="mt-1 flex items-center gap-2 font-semibold"><BracketTag bracket={slot.bracket}>{slot.code}</BracketTag> Bracket {slot.bracket} · {bracketCourtLabel(tournament, slot.bracket)}</p>
           </div>
         )}
       </div>

@@ -1,9 +1,11 @@
 """
 Builds a tournament's bracket slots, games and run of show from its settings.
 
-The format is one bracket per court:
-  - Court N hosts bracket N (A, B, C ... up to H). Every team plays every other
-    team in its bracket, one game per time slot on that court.
+The format is one bracket per court (A, B, C ... up to H):
+  - Brackets pair up on a pair of courts (A and B on courts 1-2, C and D on 3-4 ...)
+    and take turns a round at a time, so nobody plays two games in a row. With an
+    odd number of courts the last bracket has the last court to itself.
+  - Every team plays every other team in its bracket.
   - Playoffs are single elimination. With 1, 2, 4 or 8 brackets the top two of
     each bracket go through and cross over (QF1 A1 v B2, QF2 C1 v D2, QF3 B1 v A2,
     QF4 D1 v C2). Otherwise
@@ -48,16 +50,26 @@ def advancement(courts):
     return 1, playoff_size(courts) - courts
 
 
-def round_robin_pairs(teams):
-    """Every pairing of seeds 1..teams, ordered in rounds (circle method) so nobody plays twice in a row early on."""
+def bracket_courts(courts):
+    """{bracket: [court numbers]}: 4 courts -> {'A': [1, 2], 'B': [1, 2], 'C': [3, 4], 'D': [3, 4]}."""
+    out = {}
+    for i, bracket in enumerate(bracket_letters(courts)):
+        first = i - i % 2 + 1
+        out[bracket] = [first] if first == courts else [first, first + 1]
+    return out
+
+
+def round_robin_rounds(teams):
+    """Every pairing of seeds 1..teams, in rounds where each team plays at most once (circle method).
+    4 teams -> [[(1, 2), (3, 4)], [(1, 3), (2, 4)], [(1, 4), (2, 3)]]."""
     seeds = list(range(1, teams + 1)) + ([None] if teams % 2 else [])
     fixed, rest = seeds[0], seeds[1:]
-    pairs = []
+    rounds = []
     for _ in range(len(rest)):
         round_pairs = [(fixed, rest[0])] + [(rest[i], rest[-i]) for i in range(1, len(rest) // 2 + 1)]
-        pairs += [tuple(sorted(p)) for p in round_pairs if None not in p]
+        rounds.append([tuple(sorted(p)) for p in round_pairs if None not in p])
         rest = rest[1:] + rest[:1]
-    return pairs
+    return rounds
 
 
 def _seed_order(size):
@@ -102,23 +114,32 @@ def plan(courts, teams_per_bracket, start_time, game_minutes):
     """Every game and run-of-show row, with times. Pure data; build() writes it to the database."""
     game = timedelta(minutes=game_minutes)
     clock = datetime.combine(date(2000, 1, 1), start_time)
-    letters = bracket_letters(courts)
-    pairs = round_robin_pairs(teams_per_bracket)
+    rounds, match_no = [], 0
+    for pairs in round_robin_rounds(teams_per_bracket):
+        rounds.append([(match_no + i, *p) for i, p in enumerate(pairs, start=1)])
+        match_no += len(pairs)
+    sharing = {}
+    for bracket, numbers in bracket_courts(courts).items():
+        sharing.setdefault(tuple(numbers), []).append(bracket)
 
-    matches = []
-    for court, bracket in enumerate(letters, start=1):
-        for match_no, (s1, s2) in enumerate(pairs, start=1):
-            start = clock + game * (match_no - 1)
+    matches, slots = [], 0
+    for numbers, brackets in sharing.items():
+        # A1 v A2, A3 v A4 | B1 v B2, B3 v B4 | A1 v A3 ...: brackets sharing courts take turns a round at a time.
+        games = [(bracket, *g) for pairs in rounds for bracket in brackets for g in pairs]
+        for i, (bracket, match_no, s1, s2) in enumerate(games):
+            start = clock + game * (i // len(numbers))
             matches.append({
                 'code': f'RR-{bracket}-{match_no}', 'stage': 'RR', 'label': f'Bracket {bracket} · Match {match_no}',
-                'bracket': bracket, 'match_no': match_no, 'court': court, 'start': start, 'end': start + game,
+                'bracket': bracket, 'match_no': match_no, 'court': numbers[i % len(numbers)],
+                'start': start, 'end': start + game,
                 'team1_source': f'{bracket}{s1}', 'team2_source': f'{bracket}{s2}',
             })
-    rr_end = clock + game * len(pairs)
+        slots = max(slots, -(-len(games) // len(numbers)))
+    rr_end = clock + game * slots
     per_bracket, wildcards = advancement(courts)
     timeline = [
-        (clock, rr_end, 'Round robin', courts * len(pairs),
-         f'{len(pairs)} games per bracket, {courts} court{"s" if courts > 1 else ""}'),
+        (clock, rr_end, 'Round robin', courts * match_no,
+         f'{match_no} games per bracket, {courts} court{"s" if courts > 1 else ""}'),
         (rr_end, rr_end + timedelta(minutes=BREAK_MINUTES), 'Verify standings and prepare', None,
          f'Top {per_bracket} per bracket advance' + (f' + {wildcards} best runner{"s" if wildcards > 1 else ""}-up' if wildcards else '')),
     ]
@@ -185,7 +206,7 @@ def build(tournament_id):
 
 
 def retime(tournament_id):
-    """Move every game to the slot the current start time and game length give it, keeping results."""
+    """Move every game to the court and slot the current settings give it, keeping results."""
     from matches.models import Match
 
     from .models import Court, Tournament
@@ -194,7 +215,8 @@ def retime(tournament_id):
     courts = Court.objects.filter(tournament=t).count()
     matches, timeline = plan(courts, t.teams_per_bracket, _as_time(t.start_time), t.game_minutes)
     for m in matches:
-        Match.objects.filter(tournament=t, code=m['code']).update(start_time=m['start'].time(), end_time=m['end'].time())
+        Match.objects.filter(tournament=t, code=m['code']).update(
+            court=m['court'], start_time=m['start'].time(), end_time=m['end'].time())
     _write_timeline(t, timeline)
 
 

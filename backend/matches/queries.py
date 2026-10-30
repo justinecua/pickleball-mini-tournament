@@ -17,7 +17,7 @@ Example:
 from django.db import transaction
 
 from core.db import Invalid, connection, db_time, field_error, rows, to_int
-from event.schedule import advancement, bracket_letters, playoff_size
+from event.schedule import advancement, bracket_courts, bracket_letters, playoff_size
 from teams.queries import team_dict
 
 from .models import Match
@@ -159,9 +159,9 @@ def getStandings(tid):
         courts = court_count(cursor, tid)
         per_bracket, wildcards = advancement(courts)
         brackets = {
-            bracket: {'court': court, 'complete': bracket_complete(cursor, tid, bracket),
+            bracket: {'courts': numbers, 'complete': bracket_complete(cursor, tid, bracket),
                       'rows': bracket_standings(cursor, tid, bracket)}
-            for court, bracket in enumerate(bracket_letters(courts), start=1)
+            for bracket, numbers in bracket_courts(courts).items()
         }
         if wildcards and all(b['complete'] for b in brackets.values()):
             seeded = set(overall_seeds({k: b['rows'] for k, b in brackets.items()}, courts))

@@ -61,7 +61,7 @@ export default function CheckIn() {
             {ticket.slot && (
               <div className="flex justify-between gap-4 text-sm">
                 <span className="text-ink/55">Slot</span>
-                <span className="flex items-center gap-2 font-semibold"><BracketTag bracket={ticket.slot.bracket}>{ticket.slot.code}</BracketTag> Court {'ABCDEFGH'.indexOf(ticket.slot.bracket) + 1}</span>
+                <span className="flex items-center gap-2 font-semibold"><BracketTag bracket={ticket.slot.bracket}>{ticket.slot.code}</BracketTag> Bracket {ticket.slot.bracket}</span>
               </div>
             )}
             {error && <Alert>{error.message}</Alert>}
